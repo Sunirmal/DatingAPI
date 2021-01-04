@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using DatingAPI.Data;
+using DatingAPI.Extensions;
 using DatingAPI.Interfaces;
 using DatingAPI.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -28,30 +29,10 @@ namespace DatingAPI
         public IConfiguration Configuration { get; }
         public void ConfigureServices(IServiceCollection services)
         {
-            var connectionString = this.Configuration.GetConnectionString("DefaultConnection");
-            services.AddScoped<ITokerService, TokenService>();
-
-            services.AddDbContext<DataContext>
-                (options =>
-                {
-                    options.UseSqlite(this.Configuration.GetConnectionString("DefaultConnection"));
-                });
+            services.AddApplicationServices(Configuration);
             services.AddControllers();
             services.AddCors();
-            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-                .AddJwtBearer(options =>
-                {
-                    options.TokenValidationParameters = 
-                    new Microsoft.IdentityModel.Tokens.TokenValidationParameters
-                    {
-                        ValidateIssuerSigningKey= true,
-                        IssuerSigningKey= 
-                        new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(Configuration["TokenKey"])),
-                        ValidateIssuer= false,
-                        ValidateAudience= false
-                        
-                    };
-                });
+            services.AddIdentityServices(Configuration);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -66,7 +47,7 @@ namespace DatingAPI
             app.UseCors(policy=> policy
                 .AllowAnyHeader()
                 .AllowAnyMethod()
-                .WithOrigins("http://localhost:4200"));
+                .WithOrigins(Configuration["corsorigin"]));
             app.UseAuthentication();
             app.UseAuthorization();
             app.UseEndpoints(endpoints =>
